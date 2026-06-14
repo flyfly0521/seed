@@ -1,0 +1,5 @@
+__pycache__/
+figures/
+*.pyc
+*.npz
+.DS_Store
