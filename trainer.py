@@ -8,7 +8,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
-from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import confusion_matrix, classification_report
 
 
@@ -164,28 +163,23 @@ def run_loso(subject_data, subject_ids, make_model, config, verbose=True):
             print(f"\n--- Fold {fold_idx+1}/{n_folds}: "
                   f"test subject = {test_subj} ---")
 
-        # ---- 组装训练/测试集 ----
-        X_test = subject_data[test_subj]['X'].copy()
-        y_test = subject_data[test_subj]['y'].copy()
+        # ---- 组装训练/测试集（数据已在 data_loader 中逐被试标准化） ----
+        X_test = subject_data[test_subj]['X']
+        y_test = subject_data[test_subj]['y']
 
-        X_train_parts, y_train_parts = [], []
+        X_train_list, y_train_list = [], []
         for s in subject_ids:
             if s == test_subj:
                 continue
-            X_train_parts.append(subject_data[s]['X'].copy())
-            y_train_parts.append(subject_data[s]['y'].copy())
+            X_train_list.append(subject_data[s]['X'])
+            y_train_list.append(subject_data[s]['y'])
+
+        X_train = np.concatenate(X_train_list, axis=0)
+        y_train = np.concatenate(y_train_list, axis=0)
 
         if verbose:
-            n_train = sum(p.shape[0] for p in X_train_parts)
-            print(f"  Train: {n_train} (from {len(X_train_parts)} subjects), "
+            print(f"  Train: {X_train.shape[0]} (from {len(X_train_list)} subjects), "
                   f"Test: {X_test.shape[0]} (subject {test_subj})")
-
-        # ---- 逐被试 z-score 标准化（消除个体差异） ----
-        for i in range(len(X_train_parts)):
-            X_train_parts[i] = StandardScaler().fit_transform(X_train_parts[i])
-        X_train = np.concatenate(X_train_parts, axis=0)
-        y_train = np.concatenate(y_train_parts, axis=0)
-        X_test = StandardScaler().fit_transform(X_test)
 
         # ---- DataLoader ----
         train_loader = DataLoader(

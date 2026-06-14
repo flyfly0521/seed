@@ -6,6 +6,7 @@
 import os
 import pickle
 import numpy as np
+from sklearn.preprocessing import StandardScaler
 from config import CONFIG
 
 
@@ -100,10 +101,13 @@ def load_all_eeg_data(data_dir):
         subject_data[subject_id]['X'].append(X_session)
         subject_data[subject_id]['y'].append(y_session)
 
-    # 合并同一被试的多个会话
+    # 合并同一被试的多个会话，并逐被试 z-score 标准化
     for sid in subject_data:
         subject_data[sid]['X'] = np.concatenate(subject_data[sid]['X'], axis=0)
         subject_data[sid]['y'] = np.concatenate(subject_data[sid]['y'], axis=0)
+        # 逐被试独立标准化：消除个体基线差异，保留情绪相关的相对模式
+        subject_data[sid]['X'] = StandardScaler().fit_transform(
+            subject_data[sid]['X']).astype(np.float32)
 
     subject_ids = sorted(subject_data.keys())
     print(f"共加载 {len(subject_ids)} 名被试数据，被试ID = {subject_ids}")
