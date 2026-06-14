@@ -3,3 +3,6 @@ figures/
 *.pyc
 *.npz
 .DS_Store
+*.aux
+*.log
+*.out
